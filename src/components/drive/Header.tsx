@@ -1,15 +1,7 @@
-import { Search, LogOut, Cloud, Grid3X3, List, Loader2 } from "lucide-react";
+import { Search, Cloud, Grid3X3, List, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useMe } from "#/hooks/useDrive";
 import { api } from "#/lib/api";
@@ -69,39 +61,20 @@ export function Header() {
         {meLoading ? (
           <Loader2 className="size-4 animate-spin text-muted-foreground" />
         ) : !me ? (
-          <Button size="sm" onClick={() => (window.location.href = api.loginUrl())}>
+          <Button size="sm" onClick={() => (window.location.href = api.loginUrl())} className="rounded-none">
             Sign in with Google
           </Button>
         ) : (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 outline-none">
-              <Avatar className="size-7 rounded-none">
-                {me.avatarUrl ? <AvatarImage src={me.avatarUrl} alt={me.name} /> : null}
-                <AvatarFallback className="rounded-none text-xs">{me.name.charAt(0).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <span className="hidden text-left md:block">
-                <span className="block text-xs font-medium leading-none">{me.name}</span>
-                <span className="block text-[11px] leading-none text-muted-foreground">{me.email}</span>
-              </span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 rounded-none">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{me.name}</span>
-                  <span className="text-xs text-muted-foreground">{me.email}</span>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={async () => {
-                  await api.logout().catch(() => {});
-                  window.location.reload();
-                }}
-              >
-                <LogOut className="size-4" /> Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <Avatar className="size-7 rounded-none">
+              {me.avatarUrl ? <AvatarImage src={me.avatarUrl} alt={me.name} /> : null}
+              <AvatarFallback className="rounded-none text-xs">{me.name.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <span className="hidden text-left md:block">
+              <span className="block text-xs font-medium leading-none">{me.name}</span>
+              <span className="block text-[11px] leading-none text-muted-foreground">{me.email}</span>
+            </span>
+          </div>
         )}
       </div>
     </header>
