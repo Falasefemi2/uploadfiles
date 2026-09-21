@@ -1,8 +1,38 @@
-import { Folder as FolderIcon, FileText, Image, Video, Music, Archive, Download, Trash2, File as FileIcon } from "lucide-react";
+import {
+  Folder as FolderIcon,
+  FileText,
+  Image as ImageIcon,
+  Video,
+  Music,
+  Archive,
+  Download,
+  Trash2,
+  MoreHorizontal,
+  File as FileIcon,
+} from "lucide-react";
 import { useDriveStore } from "#/stores/driveStore";
 import type { Folder, FileItem } from "#/lib/api";
 import { api } from "#/lib/api";
 import { useDeleteFile, useDeleteFolder } from "#/hooks/useDrive";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import * as React from "react";
 
 function formatBytes(b: number) {
@@ -14,23 +44,22 @@ function formatBytes(b: number) {
 }
 
 function mimeIcon(mime: string, name: string) {
-  if (mime.startsWith("image/")) return <Image className="size-5 text-[#D97706]" />;
-  if (mime.startsWith("video/")) return <Video className="size-5 text-[#7C3AED]" />;
-  if (mime.startsWith("audio/")) return <Music className="size-5 text-[#059669]" />;
-  if (mime.includes("zip") || mime.includes("archive") || name.endsWith(".zip")) return <Archive className="size-5 text-[#64748B]" />;
-  if (mime.includes("pdf")) return <FileText className="size-5 text-[#DC2626]" />;
-  return <FileIcon className="size-5 text-[#64748B]" />;
+  if (mime.startsWith("image/")) return <ImageIcon className="size-5" />;
+  if (mime.startsWith("video/")) return <Video className="size-5" />;
+  if (mime.startsWith("audio/")) return <Music className="size-5" />;
+  if (mime.includes("zip") || name.endsWith(".zip")) return <Archive className="size-5" />;
+  if (mime.includes("pdf")) return <FileText className="size-5" />;
+  return <FileIcon className="size-5" />;
 }
 
 function timeAgo(d: string) {
   const diff = Date.now() - new Date(d).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+  if (hrs < 24) return `${hrs}h`;
+  return `${Math.floor(hrs / 24)}d`;
 }
 
 export function DriveGrid({
@@ -47,8 +76,8 @@ export function DriveGrid({
   const { view, currentFolderId, setCurrentFolder } = useDriveStore();
   const delFolder = useDeleteFolder(currentFolderId);
   const delFile = useDeleteFile(currentFolderId);
-
   const [downloading, setDownloading] = React.useState<string | null>(null);
+  const [pending, setPending] = React.useState<null | { type: "folder" | "file"; id: string; name: string }>(null);
 
   const handleDownload = async (f: FileItem) => {
     try {
@@ -63,41 +92,51 @@ export function DriveGrid({
 
   if (view === "list") {
     return (
-      <div className="overflow-hidden rounded-xl border border-[#E4ECFC] bg-white">
-        <div className="hidden grid-cols-[1fr_110px_110px_100px] gap-4 border-b border-[#E4ECFC] bg-[#F8FAFC] px-4 py-2.5 text-xs font-semibold uppercase tracking-widest text-[#64748B] md:grid">
+      <>
+        <div className="overflow-hidden border bg-card">
+        <div className="hidden grid-cols-[1fr_110px_110px_80px] gap-4 border-b bg-muted/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground md:grid">
           <span>Name</span>
           <span>Size</span>
           <span>Modified</span>
-          <span className="text-right">Actions</span>
+          <span className="text-right">Action</span>
         </div>
 
         {filteredFolders.map((f) => (
           <div
             key={f.id}
-            className="group flex items-center gap-3 border-b border-[#F1F5FD] px-4 py-3 last:border-0 hover:bg-[#F8FAFC]"
+            className="flex items-center gap-3 border-b px-3 py-2.5 last:border-0 hover:bg-muted/50"
           >
             <button
               onClick={() => setCurrentFolder(f.id, f.name)}
               className="flex flex-1 items-center gap-3 text-left"
             >
-              <span className="flex size-9 items-center justify-center rounded-lg bg-[#F1F5FD] text-[#2563EB]">
-                <FolderIcon className="size-5 fill-[#2563EB]/10" />
+              <span className="flex size-8 items-center justify-center border bg-secondary">
+                <FolderIcon className="size-4" />
               </span>
               <span className="truncate text-sm font-medium">{f.name}</span>
-              <span className="hidden rounded-full bg-[#F1F5FD] px-2 py-0.5 text-xs text-[#64748B] md:inline">Folder</span>
+              <Badge variant="secondary" className="hidden rounded-none font-mono text-[10px] uppercase tracking-widest md:inline-flex">
+                Folder
+              </Badge>
             </button>
-            <span className="hidden w-[110px] text-xs text-[#64748B] md:block">—</span>
-            <span className="hidden w-[110px] text-xs text-[#64748B] md:block">{timeAgo(f.createdAt)}</span>
-            <div className="ml-auto flex items-center gap-1 md:w-[100px] md:justify-end">
-              <button
-                onClick={() => {
-                  if (confirm(`Delete folder "${f.name}" and all contents?`)) delFolder.mutate(f.id);
-                }}
-                className="flex size-8 items-center justify-center rounded-full text-[#94A3B8] hover:bg-white hover:text-[#DC2626] border border-transparent hover:border-[#E4ECFC]"
-                aria-label="Delete folder"
-              >
-                <Trash2 className="size-4" />
-              </button>
+            <span className="hidden w-[110px] text-xs text-muted-foreground md:block">—</span>
+            <span className="hidden w-[110px] text-xs text-muted-foreground md:block">{timeAgo(f.createdAt)}</span>
+            <div className="ml-auto flex w-[80px] justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon-xs" className="rounded-none">
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="rounded-none">
+                  <DropdownMenuItem onClick={() => setCurrentFolder(f.id, f.name)}>Open</DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setPending({ type: "folder", id: f.id, name: f.name })}
+                  >
+                    <Trash2 className="size-4" /> Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         ))}
@@ -105,148 +144,204 @@ export function DriveGrid({
         {filteredFiles.map((f) => (
           <div
             key={f.id}
-            className="group flex items-center gap-3 border-b border-[#F1F5FD] px-4 py-3 last:border-0 hover:bg-[#F8FAFC]"
+            className="flex items-center gap-3 border-b px-3 py-2.5 last:border-0 hover:bg-muted/50"
           >
             <div className="flex flex-1 items-center gap-3 overflow-hidden">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-[#E4ECFC]">
-                {mimeIcon(f.mimeType, f.name)}
-              </span>
-              <span className="truncate text-sm font-medium">{f.name}</span>
+              <span className="flex size-8 shrink-0 items-center justify-center border bg-card">{mimeIcon(f.mimeType, f.name)}</span>
+              <span className="truncate text-sm">{f.name}</span>
               {f.status !== "confirmed" && (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                <Badge variant="outline" className="rounded-none font-mono text-[10px] uppercase">
                   {f.status}
-                </span>
+                </Badge>
               )}
             </div>
-            <span className="hidden w-[110px] shrink-0 text-xs text-[#64748B] md:block">{formatBytes(f.size)}</span>
-            <span className="hidden w-[110px] shrink-0 text-xs text-[#64748B] md:block">{timeAgo(f.createdAt)}</span>
-            <div className="ml-auto flex w-[100px] shrink-0 items-center justify-end gap-1">
-              <button
+            <span className="hidden w-[110px] shrink-0 text-xs text-muted-foreground md:block">{formatBytes(f.size)}</span>
+            <span className="hidden w-[110px] shrink-0 text-xs text-muted-foreground md:block">{timeAgo(f.createdAt)}</span>
+            <div className="flex w-[80px] shrink-0 items-center justify-end gap-1">
+              <Button
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => handleDownload(f)}
                 disabled={downloading === f.id || f.status !== "confirmed"}
-                className="flex size-8 items-center justify-center rounded-full border border-[#E4ECFC] bg-white text-[#2563EB] hover:bg-[#F1F5FD] disabled:opacity-40"
-                aria-label="Download"
+                className="rounded-none"
               >
-                {downloading === f.id ? <span className="size-4 animate-spin rounded-full border-2 border-[#2563EB] border-t-transparent" /> : <Download className="size-4" />}
-              </button>
-              <button
-                onClick={() => {
-                  if (confirm(`Delete file "${f.name}"?`)) delFile.mutate(f.id);
-                }}
-                className="flex size-8 items-center justify-center rounded-full border border-transparent text-[#94A3B8] hover:border-[#E4ECFC] hover:bg-white hover:text-[#DC2626]"
-                aria-label="Delete file"
-              >
-                <Trash2 className="size-4" />
-              </button>
+                {downloading === f.id ? <span className="size-3 animate-spin border border-current border-t-transparent" /> : <Download className="size-4" />}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon-xs" className="rounded-none">
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="rounded-none">
+                  <DropdownMenuItem onClick={() => handleDownload(f)} disabled={f.status !== "confirmed"}>
+                    Download
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => setPending({ type: "file", id: f.id, name: f.name })}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         ))}
 
         {filteredFolders.length === 0 && filteredFiles.length === 0 && (
-          <div className="px-4 py-12 text-center text-sm text-[#64748B]">No items match your search</div>
+          <div className="px-3 py-10 text-center text-sm text-muted-foreground">No matches in this folder.</div>
         )}
       </div>
+      <DeleteConfirmDialog pending={pending} setPending={setPending} delFolder={delFolder} delFile={delFile} />
+    </>
     );
   }
 
-  // GRID
   return (
-    <div className="space-y-8">
+    <>
+      <div className="space-y-6">
       {filteredFolders.length > 0 && (
         <section>
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#64748B]">Folders</h3>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Folders — {filteredFolders.length}
+          </h3>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {filteredFolders.map((f) => (
-              <div
-                key={f.id}
-                className="group relative flex flex-col rounded-xl border border-[#E4ECFC] bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-sm"
-              >
-                <button
-                  onClick={() => setCurrentFolder(f.id, f.name)}
-                  className="flex flex-1 flex-col text-left"
-                >
-                  <span className="flex size-10 items-center justify-center rounded-xl bg-[#2563EB] text-white shadow-sm">
-                    <FolderIcon className="size-5 fill-white/20" />
-                  </span>
-                  <span className="mt-3 truncate text-sm font-medium">{f.name}</span>
-                  <span className="text-xs text-[#94A3B8]">{timeAgo(f.createdAt)}</span>
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm(`Delete folder "${f.name}" and all contents?`)) delFolder.mutate(f.id);
-                  }}
-                  className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-white text-[#94A3B8] opacity-0 shadow-sm ring-1 ring-[#E4ECFC] transition-opacity group-hover:opacity-100 hover:text-[#DC2626]"
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
-              </div>
+              <Card key={f.id} className="group gap-0 rounded-none py-0 shadow-none hover:bg-muted/30">
+                <CardContent className="p-0">
+                  <button onClick={() => setCurrentFolder(f.id, f.name)} className="flex w-full flex-col p-3 text-left">
+                    <span className="flex size-8 items-center justify-center bg-primary text-primary-foreground">
+                      <FolderIcon className="size-4" />
+                    </span>
+                    <span className="mt-3 truncate text-sm font-medium">{f.name}</span>
+                    <span className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                      {timeAgo(f.createdAt)} • Folder
+                    </span>
+                  </button>
+                  <div className="flex justify-end border-t px-2 py-1">
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      className="h-7 rounded-none text-xs"
+                      onClick={() => setPending({ type: "folder", id: f.id, name: f.name })}
+                    >
+                      <Trash2 className="size-3.5" /> Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </section>
       )}
 
       <section>
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#64748B]">Files</h3>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          Files — {filteredFiles.length}
+        </h3>
         {filteredFiles.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[#E4ECFC] bg-white px-6 py-10 text-center">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-[#F1F5FD] text-[#2563EB]">
-              <FileIcon className="size-6" />
-            </div>
-            <p className="mt-3 text-sm font-medium">No files here</p>
-            <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-[#64748B]">Upload files or drag and drop them onto the drop zone above.</p>
-          </div>
+          <Card className="rounded-none border-dashed py-10 shadow-none">
+            <CardContent className="text-center">
+              <div className="mx-auto flex size-10 items-center justify-center border bg-muted">
+                <FileIcon className="size-5 text-muted-foreground" />
+              </div>
+              <p className="mt-3 text-sm font-medium">No files here</p>
+              <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
+                Drag files onto the drop zone or use Upload. They’ll appear instantly after verification.
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {filteredFiles.map((f) => (
-              <div
-                key={f.id}
-                className="group relative flex flex-col overflow-hidden rounded-xl border border-[#E4ECFC] bg-white transition-all hover:shadow-sm"
-              >
-                <div className="flex h-[112px] items-center justify-center bg-[#F8FAFC] group-hover:bg-[#F1F5FD]">
-                  <div className="flex size-14 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-[#E4ECFC]">
-                    {mimeIcon(f.mimeType, f.name)}
+              <Card key={f.id} className="group gap-0 overflow-hidden rounded-none py-0 shadow-none">
+                <CardContent className="p-0">
+                  <div className="relative flex h-[108px] items-center justify-center border-b bg-muted/30">
+                    <div className="flex size-12 items-center justify-center border bg-card shadow-sm">{mimeIcon(f.mimeType, f.name)}</div>
+                    {f.status !== "confirmed" && (
+                      <Badge variant="secondary" className="absolute left-2 top-2 rounded-none font-mono text-[10px] uppercase">
+                        {f.status}
+                      </Badge>
+                    )}
                   </div>
-                  {f.status !== "confirmed" && (
-                    <span className="absolute left-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                      {f.status}
-                    </span>
-                  )}
-                </div>
-                <div className="p-3">
-                  <p className="truncate text-sm font-medium" title={f.name}>
-                    {f.name}
-                  </p>
-                  <p className="text-xs text-[#64748B]">
-                    {formatBytes(f.size)} • {timeAgo(f.createdAt)}
-                  </p>
-                  <div className="mt-3 flex gap-1.5">
-                    <button
-                      onClick={() => handleDownload(f)}
-                      disabled={f.status !== "confirmed" || downloading === f.id}
-                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#0F172A] py-1.5 text-xs font-semibold text-white hover:bg-[#1E293B] disabled:opacity-40"
-                    >
-                      {downloading === f.id ? (
-                        <span className="size-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      ) : (
-                        <Download className="size-3.5" />
-                      )}
-                      Download
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm(`Delete "${f.name}"?`)) delFile.mutate(f.id);
-                      }}
-                      className="flex size-7 items-center justify-center rounded-lg border border-[#E4ECFC] bg-white text-[#64748B] hover:text-[#DC2626]"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                  <div className="p-3">
+                    <p className="truncate text-sm font-medium" title={f.name}>
+                      {f.name}
+                    </p>
+                    <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                      {formatBytes(f.size)} • {timeAgo(f.createdAt)}
+                    </p>
+                    <div className="mt-3 flex gap-1">
+                      <Button
+                        onClick={() => handleDownload(f)}
+                        disabled={f.status !== "confirmed" || downloading === f.id}
+                        size="xs"
+                        className="flex-1 rounded-none"
+                      >
+                        {downloading === f.id ? <span className="size-3 animate-spin border border-current border-t-transparent" /> : <Download className="size-3.5" />}
+                        Download
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon-xs"
+                        className="rounded-none"
+                        onClick={() => setPending({ type: "file", id: f.id, name: f.name })}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
       </section>
-    </div>
+      </div>
+      <DeleteConfirmDialog pending={pending} setPending={setPending} delFolder={delFolder} delFile={delFile} />
+    </>
+  );
+}
+
+function DeleteConfirmDialog({
+  pending,
+  setPending,
+  delFolder,
+  delFile,
+}: {
+  pending: { type: "folder" | "file"; id: string; name: string } | null;
+  setPending: (v: null | { type: "folder" | "file"; id: string; name: string }) => void;
+  delFolder: ReturnType<typeof useDeleteFolder>;
+  delFile: ReturnType<typeof useDeleteFile>;
+}) {
+  const open = !!pending;
+  return (
+    <AlertDialog open={open} onOpenChange={(o) => !o && setPending(null)}>
+      <AlertDialogContent className="gap-0">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {pending?.type === "folder" ? "folder" : "file"}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {pending?.type === "folder"
+              ? '"' + pending?.name + '" and everything inside it will be permanently deleted. This cannot be undone.'
+              : '"' + pending?.name + '" will be permanently deleted. This cannot be undone.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="mt-6">
+          <AlertDialogCancel onClick={() => setPending(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              if (!pending) return;
+              if (pending.type === "folder") delFolder.mutate(pending.id);
+              else delFile.mutate(pending.id);
+              setPending(null);
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

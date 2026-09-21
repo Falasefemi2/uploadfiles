@@ -3,6 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import * as React from 'react'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 import appCss from '../styles.css?url'
 
@@ -56,8 +57,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen bg-[#F8FAFC] text-[#0F172A] antialiased">
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>{children}</TooltipProvider>
+        </QueryClientProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',
