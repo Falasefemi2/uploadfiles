@@ -23,6 +23,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import * as React from "react";
 
 function formatBytes(b: number) {
@@ -67,6 +77,7 @@ export function DriveGrid({
   const delFolder = useDeleteFolder(currentFolderId);
   const delFile = useDeleteFile(currentFolderId);
   const [downloading, setDownloading] = React.useState<string | null>(null);
+  const [pending, setPending] = React.useState<null | { type: "folder" | "file"; id: string; name: string }>(null);
 
   const handleDownload = async (f: FileItem) => {
     try {
@@ -81,7 +92,8 @@ export function DriveGrid({
 
   if (view === "list") {
     return (
-      <div className="overflow-hidden border bg-card">
+      <>
+        <div className="overflow-hidden border bg-card">
         <div className="hidden grid-cols-[1fr_110px_110px_80px] gap-4 border-b bg-muted/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground md:grid">
           <span>Name</span>
           <span>Size</span>
@@ -119,9 +131,7 @@ export function DriveGrid({
                   <DropdownMenuItem onClick={() => setCurrentFolder(f.id, f.name)}>Open</DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
-                    onClick={() => {
-                      if (confirm(`Delete folder "${f.name}" and all contents?`)) delFolder.mutate(f.id);
-                    }}
+                    onClick={() => setPending({ type: "folder", id: f.id, name: f.name })}
                   >
                     <Trash2 className="size-4" /> Delete
                   </DropdownMenuItem>
@@ -169,9 +179,7 @@ export function DriveGrid({
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     variant="destructive"
-                    onClick={() => {
-                      if (confirm(`Delete "${f.name}"?`)) delFile.mutate(f.id);
-                    }}
+                    onClick={() => setPending({ type: "file", id: f.id, name: f.name })}
                   >
                     Delete
                   </DropdownMenuItem>
@@ -185,11 +193,14 @@ export function DriveGrid({
           <div className="px-3 py-10 text-center text-sm text-muted-foreground">No matches in this folder.</div>
         )}
       </div>
+      <DeleteConfirmDialog pending={pending} setPending={setPending} delFolder={delFolder} delFile={delFile} />
+    </>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {filteredFolders.length > 0 && (
         <section>
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -213,9 +224,7 @@ export function DriveGrid({
                       variant="ghost"
                       size="xs"
                       className="h-7 rounded-none text-xs"
-                      onClick={() => {
-                        if (confirm(`Delete folder "${f.name}"?`)) delFolder.mutate(f.id);
-                      }}
+                      onClick={() => setPending({ type: "folder", id: f.id, name: f.name })}
                     >
                       <Trash2 className="size-3.5" /> Delete
                     </Button>
@@ -277,9 +286,7 @@ export function DriveGrid({
                         variant="outline"
                         size="icon-xs"
                         className="rounded-none"
-                        onClick={() => {
-                          if (confirm(`Delete "${f.name}"?`)) delFile.mutate(f.id);
-                        }}
+                        onClick={() => setPending({ type: "file", id: f.id, name: f.name })}
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
@@ -291,6 +298,50 @@ export function DriveGrid({
           </div>
         )}
       </section>
-    </div>
+      </div>
+      <DeleteConfirmDialog pending={pending} setPending={setPending} delFolder={delFolder} delFile={delFile} />
+    </>
+  );
+}
+
+function DeleteConfirmDialog({
+  pending,
+  setPending,
+  delFolder,
+  delFile,
+}: {
+  pending: { type: "folder" | "file"; id: string; name: string } | null;
+  setPending: (v: null | { type: "folder" | "file"; id: string; name: string }) => void;
+  delFolder: ReturnType<typeof useDeleteFolder>;
+  delFile: ReturnType<typeof useDeleteFile>;
+}) {
+  const open = !!pending;
+  return (
+    <AlertDialog open={open} onOpenChange={(o) => !o && setPending(null)}>
+      <AlertDialogContent className="gap-0">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {pending?.type === "folder" ? "folder" : "file"}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {pending?.type === "folder"
+              ? '"' + pending?.name + '" and everything inside it will be permanently deleted. This cannot be undone.'
+              : '"' + pending?.name + '" will be permanently deleted. This cannot be undone.'}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="mt-6">
+          <AlertDialogCancel onClick={() => setPending(null)}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              if (!pending) return;
+              if (pending.type === "folder") delFolder.mutate(pending.id);
+              else delFile.mutate(pending.id);
+              setPending(null);
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

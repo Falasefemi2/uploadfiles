@@ -109,8 +109,12 @@ export function AppSidebar({
       <SidebarFooter className="border-t">
         {me ? (
           <div className="flex items-center gap-2 px-2 py-2">
-            <div className="size-7 overflow-hidden bg-secondary flex items-center justify-center text-xs font-semibold">
-              {me.name.charAt(0).toUpperCase()}
+            <div className="size-7 overflow-hidden border bg-muted flex items-center justify-center">
+              {me.avatarUrl ? (
+                <img src={me.avatarUrl} alt={me.name} referrerPolicy="no-referrer" className="size-full object-cover" />
+              ) : (
+                <span className="text-xs font-semibold">{me.name.charAt(0).toUpperCase()}</span>
+              )}
             </div>
             <div className="min-w-0 group-data-[collapsible=icon]:hidden">
               <p className="truncate text-xs font-medium leading-none">{me.name}</p>

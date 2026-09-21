@@ -1,7 +1,6 @@
-import { Search, Cloud, Grid3X3, List, Loader2 } from "lucide-react";
+import { Search, LogOut, Cloud, Grid3X3, List, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useMe } from "#/hooks/useDrive";
 import { api } from "#/lib/api";
@@ -66,14 +65,39 @@ export function Header() {
           </Button>
         ) : (
           <div className="flex items-center gap-2">
-            <Avatar className="size-7 rounded-none">
-              {me.avatarUrl ? <AvatarImage src={me.avatarUrl} alt={me.name} /> : null}
-              <AvatarFallback className="rounded-none text-xs">{me.name.charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
+            {/* shadcn avatar replaced with plain img to ensure Google image shows */}
+            <div className="size-7 overflow-hidden border bg-muted flex items-center justify-center">
+              {me.avatarUrl ? (
+                // plain img ensures referrer and cross-origin handled; base-ui Avatar fallback was hiding image
+                <img
+                  src={me.avatarUrl}
+                  alt={me.name}
+                  referrerPolicy="no-referrer"
+                  className="size-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : null}
+              {!me.avatarUrl && <span className="text-xs font-medium">{me.name.charAt(0).toUpperCase()}</span>}
+            </div>
             <span className="hidden text-left md:block">
               <span className="block text-xs font-medium leading-none">{me.name}</span>
               <span className="block text-[11px] leading-none text-muted-foreground">{me.email}</span>
             </span>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              className="rounded-none"
+              aria-label="Log out"
+              title="Log out"
+              onClick={async () => {
+                await api.logout().catch(() => {});
+                window.location.href = "/";
+              }}
+            >
+              <LogOut className="size-4" />
+            </Button>
           </div>
         )}
       </div>
