@@ -3,6 +3,8 @@ import { Upload, FileUp, X } from "lucide-react";
 import { useDriveStore } from "#/stores/driveStore";
 import { api } from "#/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export function UploadDropzone({ folderId }: { folderId: string | null }) {
   const qc = useQueryClient();
@@ -24,7 +26,6 @@ export function UploadDropzone({ folderId }: { folderId: string | null }) {
         await api.completeUpload(fileId);
         updateUpload(tmpId, { progress: 100, status: "done" });
         qc.invalidateQueries({ queryKey: ["contents", folderId] });
-        setTimeout(() => updateUpload(tmpId, { status: "done" }), 800);
       } catch (e: any) {
         updateUpload(tmpId, { status: "error", error: e.message || "Upload failed" });
       }
@@ -33,7 +34,7 @@ export function UploadDropzone({ folderId }: { folderId: string | null }) {
 
   return (
     <>
-      <div
+      <Card
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -44,33 +45,31 @@ export function UploadDropzone({ folderId }: { folderId: string | null }) {
           setDragOver(false);
           if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
         }}
-        className={`relative flex items-center gap-4 rounded-2xl border-2 border-dashed bg-white p-4 transition-colors md:p-5 ${dragOver ? "border-[#2563EB] bg-[#F1F5FD]" : "border-[#E4ECFC]"}`}
+        className={`rounded-none border-dashed shadow-none ${dragOver ? "border-primary bg-muted" : "bg-card"}`}
       >
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#2563EB] text-white md:size-12">
-          <Upload className="size-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Drag & drop files here</p>
-          <p className="text-xs leading-relaxed text-[#64748B]">or click to browse. Max 100MB per file. Stored in Supabase.</p>
-        </div>
-        <button
-          onClick={() => fileRef.current?.click()}
-          className="shrink-0 rounded-full bg-[#0F172A] px-5 py-2 text-xs font-semibold text-white hover:bg-[#1E293B] active:translate-y-px"
-        >
-          Browse files
-        </button>
-        <input
-          ref={fileRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files?.length) handleFiles(e.target.files);
-            e.target.value = "";
-          }}
-        />
-      </div>
-
+        <CardContent className="flex items-center gap-4 p-4">
+          <div className="flex size-9 shrink-0 items-center justify-center bg-primary text-primary-foreground">
+            <Upload className="size-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Drop files to upload</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">100MB per file • Verified via Supabase storage.</p>
+          </div>
+          <Button variant="outline" onClick={() => fileRef.current?.click()} className="shrink-0 rounded-none">
+            Browse files
+          </Button>
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.length) handleFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </CardContent>
+      </Card>
       <UploadQueue />
     </>
   );
@@ -82,24 +81,24 @@ function UploadQueue() {
   return (
     <div className="mt-3 space-y-2">
       {uploads.map((u) => (
-        <div key={u.id} className="flex items-center gap-3 rounded-xl border border-[#E4ECFC] bg-white px-3 py-2.5">
-          <div className={`flex size-8 items-center justify-center rounded-lg ${u.status === "error" ? "bg-red-50 text-[#DC2626]" : u.status === "done" ? "bg-emerald-50 text-emerald-600" : "bg-[#F1F5FD] text-[#2563EB]"}`}>
-            <FileUp className="size-4" />
+        <div key={u.id} className="flex items-center gap-3 border bg-card px-3 py-2">
+          <div className={`flex size-7 items-center justify-center border ${u.status === "error" ? "bg-destructive/10 text-destructive" : u.status === "done" ? "bg-secondary" : "bg-secondary"}`}>
+            <FileUp className="size-3.5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{u.name}</p>
-            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[#F1F5FD]">
+            <p className="truncate text-sm">{u.name}</p>
+            <div className="mt-1 h-1 w-full bg-secondary">
               <div
-                className={`h-full rounded-full transition-all ${u.status === "error" ? "bg-[#DC2626]" : u.status === "done" ? "bg-emerald-500" : "bg-[#2563EB]"}`}
+                className={`h-full transition-all ${u.status === "error" ? "bg-destructive" : u.status === "done" ? "bg-primary" : "bg-primary"}`}
                 style={{ width: `${u.progress}%` }}
               />
             </div>
-            {u.status === "error" && <p className="mt-1 text-xs text-[#DC2626]">{u.error}</p>}
-            {u.status === "done" && <p className="text-xs text-emerald-600">Uploaded & verified</p>}
+            {u.status === "error" && <p className="mt-1 font-mono text-xs text-destructive">{u.error}</p>}
+            {u.status === "done" && <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">Verified</p>}
           </div>
-          <button onClick={() => removeUpload(u.id)} className="flex size-7 items-center justify-center rounded-full hover:bg-[#F1F5FD] text-[#94A3B8]">
+          <Button variant="ghost" size="icon-xs" className="rounded-none" onClick={() => removeUpload(u.id)}>
             <X className="size-4" />
-          </button>
+          </Button>
         </div>
       ))}
     </div>

@@ -1,5 +1,16 @@
 import { Search, LogOut, Cloud, Grid3X3, List, Loader2 } from "lucide-react";
-import { Button } from "#/components/ui/button";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useMe } from "#/hooks/useDrive";
 import { api } from "#/lib/api";
 import { useDriveStore } from "#/stores/driveStore";
@@ -9,80 +20,88 @@ export function Header() {
   const { search, setSearch, view, setView } = useDriveStore();
 
   return (
-    <header className="sticky top-0 z-30 flex h-[56px] items-center gap-3 border-b border-[#E4ECFC] bg-white px-4 md:px-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-[#2563EB] text-white">
-          <Cloud className="size-5" />
+    <header className="sticky top-0 z-10 flex h-[52px] items-center gap-3 border-b bg-background/80 px-3 backdrop-blur supports-backdrop-filter:bg-background/60 md:px-4">
+      <SidebarTrigger className="shrink-0" />
+      <div className="hidden items-center gap-2 md:flex">
+        <div className="flex size-7 items-center justify-center bg-primary text-primary-foreground">
+          <Cloud className="size-3.5" />
         </div>
-        <span className="text-[15px] font-semibold tracking-tight">Drive</span>
-        <span className="hidden rounded-full bg-[#F1F5FD] px-2 py-0.5 text-[11px] font-medium text-[#2563EB] md:inline-flex">Clone</span>
+        <span className="text-xs font-semibold tracking-widest uppercase">Drive</span>
+        <span className="hidden border px-1.5 py-0.5 font-mono text-[10px] tracking-widest uppercase text-muted-foreground sm:inline-flex">
+          Sera
+        </span>
       </div>
 
-      <div className="mx-4 hidden flex-1 justify-center md:flex">
+      <div className="mx-2 hidden flex-1 justify-center md:flex">
         <div className="relative w-full max-w-[560px]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#94A3B8]" />
-          <input
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search in Drive"
-            className="h-9 w-full rounded-full border border-[#E4ECFC] bg-[#F8FAFC] pl-10 pr-4 text-sm placeholder:text-[#94A3B8] focus:border-[#2563EB] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20"
+            placeholder="Search in this folder — name, type"
+            className="h-8 rounded-none pl-9 text-sm"
           />
         </div>
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
-        <div className="hidden items-center rounded-full border border-[#E4ECFC] p-1 md:flex">
-          <button
+      <div className="ml-auto flex items-center gap-1.5">
+        <div className="hidden items-center border p-0.5 md:flex">
+          <Button
+            variant={view === "grid" ? "secondary" : "ghost"}
+            size="icon-xs"
             aria-label="Grid view"
             onClick={() => setView("grid")}
-            className={`flex size-7 items-center justify-center rounded-full transition-colors ${view === "grid" ? "bg-[#2563EB] text-white" : "text-[#64748B] hover:bg-[#F1F5FD]"}`}
+            className="rounded-none"
           >
             <Grid3X3 className="size-3.5" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={view === "list" ? "secondary" : "ghost"}
+            size="icon-xs"
             aria-label="List view"
             onClick={() => setView("list")}
-            className={`flex size-7 items-center justify-center rounded-full transition-colors ${view === "list" ? "bg-[#2563EB] text-white" : "text-[#64748B] hover:bg-[#F1F5FD]"}`}
+            className="rounded-none"
           >
             <List className="size-3.5" />
-          </button>
+          </Button>
         </div>
 
         {meLoading ? (
-          <Loader2 className="size-4 animate-spin text-[#64748B]" />
+          <Loader2 className="size-4 animate-spin text-muted-foreground" />
         ) : !me ? (
-          <Button
-            size="sm"
-            onClick={() => (window.location.href = api.loginUrl())}
-            className="bg-[#2563EB] text-white hover:bg-[#1D4ED8]"
-          >
+          <Button size="sm" onClick={() => (window.location.href = api.loginUrl())}>
             Sign in with Google
           </Button>
         ) : (
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right md:block">
-              <p className="text-sm font-medium leading-none">{me.name}</p>
-              <p className="text-xs text-[#64748B]">{me.email}</p>
-            </div>
-            {me.avatarUrl ? (
-              <img src={me.avatarUrl} alt={me.name} className="size-8 rounded-full object-cover ring-2 ring-[#E4ECFC]" />
-            ) : (
-              <div className="flex size-8 items-center justify-center rounded-full bg-[#2563EB] text-sm font-semibold text-white">
-                {me.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <button
-              onClick={async () => {
-                await api.logout().catch(() => {});
-                window.location.reload();
-              }}
-              className="flex size-8 items-center justify-center rounded-full border border-[#E4ECFC] text-[#64748B] hover:bg-[#F1F5FD] hover:text-[#0F172A]"
-              aria-label="Logout"
-              title="Logout"
-            >
-              <LogOut className="size-4" />
-            </button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-2 outline-none">
+              <Avatar className="size-7 rounded-none">
+                {me.avatarUrl ? <AvatarImage src={me.avatarUrl} alt={me.name} /> : null}
+                <AvatarFallback className="rounded-none text-xs">{me.name.charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <span className="hidden text-left md:block">
+                <span className="block text-xs font-medium leading-none">{me.name}</span>
+                <span className="block text-[11px] leading-none text-muted-foreground">{me.email}</span>
+              </span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 rounded-none">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{me.name}</span>
+                  <span className="text-xs text-muted-foreground">{me.email}</span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  await api.logout().catch(() => {});
+                  window.location.reload();
+                }}
+              >
+                <LogOut className="size-4" /> Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </header>
