@@ -63,8 +63,6 @@ function timeAgo(d: string) {
 }
 
 export function DriveGrid({
-  folders,
-  files,
   filteredFolders,
   filteredFiles,
 }: {
@@ -122,11 +120,13 @@ export function DriveGrid({
             <span className="hidden w-[110px] text-xs text-muted-foreground md:block">{timeAgo(f.createdAt)}</span>
             <div className="ml-auto flex w-[80px] justify-end">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-xs" className="rounded-none">
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="ghost" size="icon-xs" className="rounded-none">
+                      <MoreHorizontal className="size-4" />
+                    </Button>
+                  }
+                />
                 <DropdownMenuContent align="end" className="rounded-none">
                   <DropdownMenuItem onClick={() => setCurrentFolder(f.id, f.name)}>Open</DropdownMenuItem>
                   <DropdownMenuItem
@@ -168,11 +168,13 @@ export function DriveGrid({
                 {downloading === f.id ? <span className="size-3 animate-spin border border-current border-t-transparent" /> : <Download className="size-4" />}
               </Button>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-xs" className="rounded-none">
-                    <MoreHorizontal className="size-4" />
-                  </Button>
-                </DropdownMenuTrigger>
+                <DropdownMenuTrigger
+                  render={
+                    <Button variant="ghost" size="icon-xs" className="rounded-none">
+                      <MoreHorizontal className="size-4" />
+                    </Button>
+                  }
+                />
                 <DropdownMenuContent align="end" className="rounded-none">
                   <DropdownMenuItem onClick={() => handleDownload(f)} disabled={f.status !== "confirmed"}>
                     Download

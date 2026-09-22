@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Search, LogOut, Cloud, Grid3X3, List, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,8 +75,8 @@ export function Header() {
                   alt={me.name}
                   referrerPolicy="no-referrer"
                   className="size-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                    e.currentTarget.style.display = "none";
                   }}
                 />
               ) : null}

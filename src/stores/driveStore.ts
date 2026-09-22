@@ -29,7 +29,7 @@ type DriveState = {
   clearUploads: () => void;
 };
 
-export const useDriveStore = create<DriveState>((set, get) => ({
+export const useDriveStore = create<DriveState>((set, _get) => ({
   currentFolderId: null,
   breadcrumbs: [{ id: null, name: "My Drive" }],
   view: "grid",
