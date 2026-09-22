@@ -30,6 +30,10 @@ const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
+function isString(value: string | React.ComponentProps<typeof TooltipContent>): value is string {
+  return Object.prototype.toString.call(value) === "[object String]"
+}
+
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
   open: boolean
@@ -73,7 +77,7 @@ function SidebarProvider({
   const open = openProp ?? _open
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
-      const openState = typeof value === "function" ? value(open) : value
+      const openState = value instanceof Function ? value(open) : value
       if (setOpenProp) {
         setOpenProp(openState)
       } else {
@@ -129,6 +133,7 @@ function SidebarProvider({
       <div
         data-slot="sidebar-wrapper"
         style={
+          // SAFETY: CSS variables --sidebar-width/--sidebar-width-icon are valid custom properties; React.CSSProperties does not include them but the browser accepts them.
           {
             "--sidebar-width": SIDEBAR_WIDTH,
             "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
@@ -187,6 +192,7 @@ function Sidebar({
           data-mobile="true"
           className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
           style={
+            // SAFETY: CSS variable --sidebar-width is a valid custom property for mobile width; React types omit custom vars.
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
             } as React.CSSProperties
@@ -532,7 +538,7 @@ function SidebarMenuButton({
     return comp
   }
 
-  if (typeof tooltip === "string") {
+  if (isString(tooltip)) {
     tooltip = {
       children: tooltip,
     }
@@ -627,6 +633,7 @@ function SidebarMenuSkeleton({
         className="h-4 max-w-(--skeleton-width) flex-1"
         data-sidebar="menu-skeleton-text"
         style={
+          // SAFETY: CSS variable --skeleton-width is a valid custom property for dynamic width; React types omit custom vars.
           {
             "--skeleton-width": width,
           } as React.CSSProperties

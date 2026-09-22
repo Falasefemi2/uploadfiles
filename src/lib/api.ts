@@ -1,4 +1,5 @@
 // native fetch api client - no axios
+// SAFETY: Vite injects VITE_API_URL as string at build time if defined; undefined fallback is intentional for local dev.
 const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) || "http://localhost:8080";
 
 function url(path: string) {
@@ -16,7 +17,11 @@ async function handleJson<T>(res: Response): Promise<T> {
     } catch {}
     throw new Error(msg);
   }
-  if (res.status === 204) return undefined as T;
+  if (res.status === 204) {
+    // SAFETY: 204 No Content has no body; undefined is the only valid T for callers that expect void.
+    return undefined as T;
+  }
+  // SAFETY: JSON is decoded at the I/O boundary; caller provides T as the expected contract for this endpoint.
   return res.json() as Promise<T>;
 }
 

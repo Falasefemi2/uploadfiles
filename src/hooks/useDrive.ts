@@ -13,7 +13,7 @@ export function useMe() {
     retry: false,
     staleTime: 5 * 60 * 1000,
     // avoid SSR fetch without cookie — run only on client
-    enabled: typeof window !== "undefined",
+    enabled: "window" in globalThis,
   });
 }
 

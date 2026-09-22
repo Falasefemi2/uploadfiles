@@ -237,7 +237,7 @@ function DrivePage() {
               <Card className="rounded-none border-destructive/30 bg-destructive/5">
                 <CardContent className="p-6 text-center">
                   <p className="text-sm font-medium text-destructive">Failed to load contents</p>
-                  <p className="mt-1 font-mono text-xs text-muted-foreground">{(error as Error)?.message}</p>
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
                   <Button onClick={() => refetch()} variant="outline" size="sm" className="mt-3 rounded-none">
                     Try again
                   </Button>
